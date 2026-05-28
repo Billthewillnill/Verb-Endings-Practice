@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verb Engine Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #60a5fa; }
+        .tab-inactive { color: #94a3b8; }
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+        .correct-flash { animation: correctFlash 0.5s ease-out; }
+        @keyframes correctFlash {
+            0% { background-color: #166534; }
+            100% { background-color: transparent; }
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <!-- Header & Nav -->
+    <header class="bg-slate-900 p-4 border-b border-slate-700 shadow-md">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-gears text-blue-500"></i> The Verb Engine
+            </h1>
+            <div class="flex gap-4 text-sm font-semibold">
+                <div class="bg-slate-800 px-3 py-1 rounded border border-slate-700">Score: <span id="score" class="text-blue-400">0</span></div>
+                <div class="bg-slate-800 px-3 py-1 rounded border border-slate-700">Streak: <span id="streak" class="text-orange-400">0</span></div>
+            </div>
+        </div>
+        <nav class="max-w-4xl mx-auto mt-4 flex justify-around sm:justify-start sm:gap-8">
+            <button onclick="switchTab('game1')" id="nav-game1" class="pb-2 px-1 tab-active font-medium"><i class="fa-solid fa-keyboard mr-1"></i>Conjugator</button>
+            <button onclick="switchTab('game2')" id="nav-game2" class="pb-2 px-1 tab-inactive font-medium hover:text-slate-300"><i class="fa-solid fa-clock mr-1"></i>Time Travel</button>
+            <button onclick="switchTab('game3')" id="nav-game3" class="pb-2 px-1 tab-inactive font-medium hover:text-slate-300"><i class="fa-solid fa-users mr-1"></i>Pronoun Match</button>
+            <button onclick="toggleReference()" class="pb-2 px-1 text-slate-400 hover:text-yellow-400 font-medium ml-auto"><i class="fa-solid fa-book mr-1"></i>Tools/Table</button>
+        </nav>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-grow flex items-center justify-center p-4 max-w-4xl mx-auto w-full relative">
+        
+        <!-- Game 1: Type the Conjugation -->
+        <div id="game1" class="w-full max-w-lg bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg text-center">
+            <h2 class="text-xl text-slate-300 mb-2">Game 1: The Conjugator</h2>
+            
+            <!-- Filters -->
+            <div class="mb-4 bg-slate-900 p-3 rounded-lg border border-slate-700 text-left text-xs text-slate-300">
+                <div class="mb-2 flex flex-wrap gap-2 items-center">
+                    <span class="text-slate-400 font-bold mr-1">Tenses:</span>
+                    <label><input type="checkbox" class="tense-cb accent-blue-500" value="Present" checked> Present</label>
+                    <label><input type="checkbox" class="tense-cb accent-blue-500" value="Past" checked> Past</label>
+                    <label><input type="checkbox" class="tense-cb accent-blue-500" value="Future" checked> Future</label>
+                </div>
+                <div class="flex flex-wrap gap-2 items-center">
+                    <span class="text-slate-400 font-bold mr-1">Pronouns:</span>
+                    <label><input type="checkbox" class="pronoun-cb accent-blue-500" value="Yo" checked> Yo</label>
+                    <label><input type="checkbox" class="pronoun-cb accent-blue-500" value="Tú" checked> Tú</label>
+                    <label><input type="checkbox" class="pronoun-cb accent-blue-500" value="Él/Ella" checked> Él</label>
+                    <label><input type="checkbox" class="pronoun-cb accent-blue-500" value="Nosotros" checked> Nos</label>
+                    <label><input type="checkbox" class="pronoun-cb accent-blue-500" value="Vosotros" checked> Vos</label>
+                    <label><input type="checkbox" class="pronoun-cb accent-blue-500" value="Ellos/Ellas" checked> Ellos</label>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 p-4 rounded-lg mb-6 shadow-inner border border-slate-700">
+                <div class="text-sm text-blue-400 mb-1 font-semibold uppercase tracking-wider" id="g1-tense">Present</div>
+                <div class="text-3xl font-bold text-white mb-2" id="g1-pronoun">Yo</div>
+                <div class="text-lg text-slate-400 mb-4">(<span id="g1-infinitive" class="italic">hablar</span> - to speak)</div>
+                
+                <div class="flex justify-center items-center gap-2">
+                    <span id="g1-root" class="text-2xl font-mono text-slate-300">habl</span>
+                    <input type="text" id="g1-input" autocomplete="off" class="w-24 bg-slate-700 border-b-2 border-blue-500 text-2xl font-mono text-white text-center py-1 outline-none focus:bg-slate-600 rounded-t" placeholder="???">
+                </div>
+            </div>
+            
+            <div class="flex gap-2 justify-center">
+                <button onclick="checkGame1()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded transition">Submit</button>
+                <button onclick="useTool('g1-hint')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 px-4 rounded transition" title="Show ending hint"><i class="fa-solid fa-lightbulb"></i> Hint</button>
+            </div>
+            <p id="g1-feedback" class="mt-4 h-6 font-semibold"></p>
+        </div>
+
+        <!-- Game 2: Time Traveler -->
+        <div id="game2" class="w-full max-w-lg bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg text-center hidden">
+            <h2 class="text-xl text-slate-300 mb-2">Game 2: Time Traveler</h2>
+            <p class="text-sm text-slate-400 mb-6">Identify if this action is happening in the Past, Present, or Future.</p>
+            
+            <div class="bg-slate-900 p-8 rounded-lg mb-6 shadow-inner border border-slate-700">
+                <div class="text-4xl font-bold text-white tracking-wide" id="g2-verb">hablaré</div>
+                <div class="text-sm text-slate-400 mt-2">(<span id="g2-pronoun">Yo</span>)</div>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-3">
+                <button onclick="checkGame2('Past')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded transition">Past</button>
+                <button onclick="checkGame2('Present')" class="bg-teal-600 hover:bg-teal-500 text-white font-bold py-3 rounded transition">Present</button>
+                <button onclick="checkGame2('Future')" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 rounded transition">Future</button>
+            </div>
+            <div class="mt-4">
+                <button onclick="useTool('g2-hint')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 px-4 rounded transition text-sm"><i class="fa-solid fa-magnifying-glass"></i> Highlight Suffix</button>
+            </div>
+            <p id="g2-feedback" class="mt-4 h-6 font-semibold"></p>
+        </div>
+
+        <!-- Game 3: Pronoun Matcher -->
+        <div id="game3" class="w-full max-w-lg bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg text-center hidden">
+            <h2 class="text-xl text-slate-300 mb-2">Game 3: Pronoun Matcher</h2>
+            <p class="text-sm text-slate-400 mb-6">Who is doing the action? Select the correct pronoun.</p>
+            
+            <div class="bg-slate-900 p-6 rounded-lg mb-6 shadow-inner border border-slate-700 relative">
+                <div class="absolute top-2 right-2 text-xs font-bold bg-slate-800 px-2 py-1 rounded text-slate-400 uppercase" id="g3-tense">Past</div>
+                <div class="text-4xl font-bold text-white tracking-wide mt-2" id="g3-verb">comimos</div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3" id="g3-buttons">
+                <!-- Buttons injected via JS -->
+            </div>
+            <div class="mt-4">
+                <button onclick="useTool('g3-hint')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 px-4 rounded transition text-sm"><i class="fa-solid fa-eraser"></i> Remove 2 Wrongs</button>
+            </div>
+            <p id="g3-feedback" class="mt-4 h-6 font-semibold"></p>
+        </div>
+
+        <!-- Tool / Reference Modal -->
+        <div id="referenceModal" class="absolute inset-0 bg-slate-900/95 backdrop-blur-sm z-50 hidden flex-col items-center justify-center p-4">
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-white"><i class="fa-solid fa-table mr-2"></i> Verb Engine Reference</h2>
+                    <button onclick="toggleReference()" class="text-slate-400 hover:text-white text-2xl">&times;</button>
+                </div>
+                
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- AR Table -->
+                    <div class="bg-slate-900 rounded p-4">
+                        <h3 class="text-center font-bold text-blue-400 mb-2 border-b border-slate-700 pb-2">-AR (Hablar)</h3>
+                        <table class="w-full text-sm text-left">
+                            <thead><tr class="text-slate-400"><th></th><th>Pres</th><th>Past</th><th>Fut*</th></tr></thead>
+                            <tbody class="text-slate-200">
+                                <tr><td class="font-bold text-slate-400">Yo</td><td>o</td><td>é</td><td>é</td></tr>
+                                <tr><td class="font-bold text-slate-400">Tú</td><td>as</td><td>aste</td><td>ás</td></tr>
+                                <tr><td class="font-bold text-slate-400">Él/Ella</td><td>a</td><td>ó</td><td>á</td></tr>
+                                <tr><td class="font-bold text-slate-400">Nos</td><td>amos</td><td>amos</td><td>emos</td></tr>
+                                <tr><td class="font-bold text-slate-400">Vos</td><td>áis</td><td>asteis</td><td>éis</td></tr>
+                                <tr><td class="font-bold text-slate-400">Ellos</td><td>an</td><td>aron</td><td>án</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- ER Table -->
+                    <div class="bg-slate-900 rounded p-4">
+                        <h3 class="text-center font-bold text-emerald-400 mb-2 border-b border-slate-700 pb-2">-ER (Comer)</h3>
+                        <table class="w-full text-sm text-left">
+                            <thead><tr class="text-slate-400"><th></th><th>Pres</th><th>Past</th><th>Fut*</th></tr></thead>
+                            <tbody class="text-slate-200">
+                                <tr><td class="font-bold text-slate-400">Yo</td><td>o</td><td>í</td><td>é</td></tr>
+                                <tr><td class="font-bold text-slate-400">Tú</td><td>es</td><td>iste</td><td>ás</td></tr>
+                                <tr><td class="font-bold text-slate-400">Él/Ella</td><td>e</td><td>ió</td><td>á</td></tr>
+                                <tr><td class="font-bold text-slate-400">Nos</td><td>emos</td><td>imos</td><td>emos</td></tr>
+                                <tr><td class="font-bold text-slate-400">Vos</td><td>éis</td><td>isteis</td><td>éis</td></tr>
+                                <tr><td class="font-bold text-slate-400">Ellos</td><td>en</td><td>ieron</td><td>án</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- IR Table -->
+                    <div class="bg-slate-900 rounded p-4">
+                        <h3 class="text-center font-bold text-purple-400 mb-2 border-b border-slate-700 pb-2">-IR (Vivir)</h3>
+                        <table class="w-full text-sm text-left">
+                            <thead><tr class="text-slate-400"><th></th><th>Pres</th><th>Past</th><th>Fut*</th></tr></thead>
+                            <tbody class="text-slate-200">
+                                <tr><td class="font-bold text-slate-400">Yo</td><td>o</td><td>í</td><td>é</td></tr>
+                                <tr><td class="font-bold text-slate-400">Tú</td><td>es</td><td>iste</td><td>ás</td></tr>
+                                <tr><td class="font-bold text-slate-400">Él/Ella</td><td>e</td><td>ió</td><td>á</td></tr>
+                                <tr><td class="font-bold text-slate-400">Nos</td><td>imos</td><td>imos</td><td>emos</td></tr>
+                                <tr><td class="font-bold text-slate-400">Vos</td><td>ís</td><td>isteis</td><td>éis</td></tr>
+                                <tr><td class="font-bold text-slate-400">Ellos</td><td>en</td><td>ieron</td><td>án</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-400 mt-4 text-center">*Future endings attach to the FULL infinitive word (e.g., Hablar + é = Hablaré)</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- Data Engine ---
+        const dictionary = [
+            { root: "habl", type: "ar", inf: "hablar", en: "to speak" },
+            { root: "camin", type: "ar", inf: "caminar", en: "to walk" },
+            { root: "cort", type: "ar", inf: "cortar", en: "to cut" },
+            { root: "com", type: "er", inf: "comer", en: "to eat" },
+            { root: "corr", type: "er", inf: "correr", en: "to run" },
+            { root: "beb", type: "er", inf: "beber", en: "to drink" },
+            { root: "viv", type: "ir", inf: "vivir", en: "to live" },
+            { root: "escrib", type: "ir", inf: "escribir", en: "to write" }
+        ];
+
+        const pronouns = ["Yo", "Tú", "Él/Ella", "Nosotros", "Vosotros", "Ellos/Ellas"];
+        const tenses = ["Present", "Past", "Future"];
+
+        const rules = {
+            ar: { 
+                Present: ["o", "as", "a", "amos", "áis", "an"], 
+                Past: ["é", "aste", "ó", "amos", "asteis", "aron"], 
+                Future: ["aré", "arás", "ará", "aremos", "aréis", "arán"] 
+            },
+            er: { 
+                Present: ["o", "es", "e", "emos", "éis", "en"], 
+                Past: ["í", "iste", "ió", "imos", "isteis", "ieron"], 
+                Future: ["eré", "erás", "erá", "eremos", "eréis", "erán"] 
+            },
+            ir: { 
+                Present: ["o", "es", "e", "imos", "ís", "en"], 
+                Past: ["í", "iste", "ió", "imos", "isteis", "ieron"], 
+                Future: ["iré", "irás", "irá", "iremos", "iréis", "irán"] 
+            }
+        };
+
+        // --- State Management ---
+        let score = 0;
+        let streak = 0;
+        let currentGame = 'game1';
+        let currentData = {};
+
+        // --- Utility Functions ---
+        const getEl = id => document.getElementById(id);
+        const randomItem = arr => arr[Math.floor(Math.random() * arr.length)];
+        
+        function generateConjugation() {
+            let validTenses = tenses;
+            let validPronouns = pronouns;
+            
+            // Apply filters only for Game 1
+            if (currentGame === 'game1') {
+                const activeTenses = Array.from(document.querySelectorAll('.tense-cb:checked')).map(cb => cb.value);
+                const activePronouns = Array.from(document.querySelectorAll('.pronoun-cb:checked')).map(cb => cb.value);
+                
+                if (activeTenses.length > 0) validTenses = activeTenses;
+                if (activePronouns.length > 0) validPronouns = activePronouns;
+            }
+
+            const verb = randomItem(dictionary);
+            const pronoun = randomItem(validPronouns);
+            const pIdx = pronouns.indexOf(pronoun);
+            const tense = randomItem(validTenses);
+            const suffix = rules[verb.type][tense][pIdx];
+            const fullWord = verb.root + suffix;
+            
+            return { verb, pronoun, tense, suffix, fullWord, pIdx };
+        }
+
+        function updateScore(correct) {
+            if(correct) {
+                score += 10 + (streak * 2);
+                streak++;
+                getEl(currentGame).classList.add('correct-flash');
+                setTimeout(() => getEl(currentGame).classList.remove('correct-flash'), 500);
+            } else {
+                streak = 0;
+                getEl(currentGame).classList.add('shake');
+                setTimeout(() => getEl(currentGame).classList.remove('shake'), 400);
+            }
+            getEl('score').innerText = score;
+            getEl('streak').innerText = streak;
+        }
+
+        // --- Game 1: Conjugator ---
+        function loadGame1() {
+            currentData = generateConjugation();
+            getEl('g1-tense').innerText = currentData.tense;
+            getEl('g1-pronoun').innerText = currentData.pronoun;
+            getEl('g1-infinitive').innerText = `${currentData.verb.inf} - ${currentData.verb.en}`;
+            getEl('g1-root').innerText = currentData.verb.root;
+            getEl('g1-input').value = '';
+            getEl('g1-input').focus();
+            getEl('g1-feedback').innerText = '';
+            getEl('g1-feedback').className = "mt-4 h-6 font-semibold";
+        }
+
+        function checkGame1() {
+            const input = getEl('g1-input').value.trim().toLowerCase();
+            // Allow without accents for easier typing, but exact match is best
+            const normalizedInput = input.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const normalizedSuffix = currentData.suffix.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            
+            if(input === currentData.suffix || normalizedInput === normalizedSuffix) {
+                updateScore(true);
+                getEl('g1-feedback').innerText = "Correct! " + currentData.verb.root + currentData.suffix;
+                getEl('g1-feedback').classList.add("text-green-400");
+                setTimeout(loadGame1, 1000);
+            } else {
+                updateScore(false);
+                getEl('g1-feedback').innerText = `Incorrect. The ending is -${currentData.suffix}`;
+                getEl('g1-feedback').classList.add("text-red-400");
+            }
+        }
+
+        // Allow Enter key to submit Game 1
+        getEl('g1-input').addEventListener("keypress", function(event) {
+            if (event.key === "Enter") checkGame1();
+        });
+
+        // Auto-refresh when filters change
+        document.querySelectorAll('.tense-cb, .pronoun-cb').forEach(cb => {
+            cb.addEventListener('change', loadGame1);
+        });
+
+        // --- Game 2: Time Traveler ---
+        function loadGame2() {
+            currentData = generateConjugation();
+            getEl('g2-verb').innerHTML = currentData.fullWord;
+            getEl('g2-pronoun').innerText = currentData.pronoun;
+            getEl('g2-feedback').innerText = '';
+        }
+
+        function checkGame2(selectedTense) {
+            if(selectedTense === currentData.tense) {
+                updateScore(true);
+                getEl('g2-feedback').innerText = "Correct! It is " + currentData.tense;
+                getEl('g2-feedback').className = "mt-4 h-6 font-semibold text-green-400";
+                setTimeout(loadGame2, 1000);
+            } else {
+                updateScore(false);
+                getEl('g2-feedback').innerText = `Incorrect. It's ${currentData.tense}.`;
+                getEl('g2-feedback').className = "mt-4 h-6 font-semibold text-red-400";
+            }
+        }
+
+        // --- Game 3: Pronoun Matcher ---
+        function loadGame3() {
+            currentData = generateConjugation();
+            getEl('g3-verb').innerText = currentData.fullWord;
+            getEl('g3-tense').innerText = currentData.tense;
+            getEl('g3-feedback').innerText = '';
+            
+            const btnContainer = getEl('g3-buttons');
+            btnContainer.innerHTML = '';
+            pronouns.forEach(p => {
+                const btn = document.createElement('button');
+                btn.className = "g3-btn bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded transition";
+                btn.innerText = p;
+                btn.onclick = () => checkGame3(p, btn);
+                btnContainer.appendChild(btn);
+            });
+        }
+
+        function checkGame3(selectedPronoun, btnElement) {
+            if(selectedPronoun === currentData.pronoun) {
+                updateScore(true);
+                btnElement.classList.replace('bg-slate-700', 'bg-green-600');
+                btnElement.classList.replace('hover:bg-slate-600', 'hover:bg-green-600');
+                getEl('g3-feedback').innerText = "Correct!";
+                getEl('g3-feedback').className = "mt-4 h-6 font-semibold text-green-400";
+                setTimeout(loadGame3, 1000);
+            } else {
+                updateScore(false);
+                btnElement.classList.replace('bg-slate-700', 'bg-red-600');
+                getEl('g3-feedback').innerText = `Incorrect. It was ${currentData.pronoun}.`;
+                getEl('g3-feedback').className = "mt-4 h-6 font-semibold text-red-400";
+            }
+        }
+
+        // --- Tools Engine ---
+        function useTool(toolType) {
+            if(score >= 5) {
+                score -= 5; // Costs 5 points to use a tool
+                getEl('score').innerText = score;
+                
+                if(toolType === 'g1-hint') {
+                    getEl('g1-input').placeholder = "Starts with " + currentData.suffix.charAt(0) + "...";
+                }
+                else if(toolType === 'g2-hint') {
+                    // Highlight just the suffix
+                    getEl('g2-verb').innerHTML = `${currentData.verb.root}<span class="text-blue-400">${currentData.suffix}</span>`;
+                }
+                else if(toolType === 'g3-hint') {
+                    // Disable 2 incorrect buttons
+                    const btns = Array.from(document.querySelectorAll('.g3-btn'));
+                    let removed = 0;
+                    btns.forEach(btn => {
+                        if(btn.innerText !== currentData.pronoun && removed < 2) {
+                            btn.disabled = true;
+                            btn.classList.add('opacity-30', 'cursor-not-allowed');
+                            removed++;
+                        }
+                    });
+                }
+            } else {
+                alert("You need at least 5 points to use a tool!");
+            }
+        }
+
+        function toggleReference() {
+            const modal = getEl('referenceModal');
+            modal.classList.toggle('hidden');
+            modal.classList.toggle('flex');
+        }
+
+        // --- Navigation ---
+        function switchTab(gameId) {
+            ['game1', 'game2', 'game3'].forEach(id => {
+                getEl(id).classList.add('hidden');
+                getEl(`nav-${id}`).className = "pb-2 px-1 tab-inactive font-medium hover:text-slate-300";
+            });
+            
+            getEl(gameId).classList.remove('hidden');
+            getEl(`nav-${gameId}`).className = "pb-2 px-1 tab-active font-medium";
+            currentGame = gameId;
+
+            if(gameId === 'game1') loadGame1();
+            if(gameId === 'game2') loadGame2();
+            if(gameId === 'game3') loadGame3();
+        }
+
+        // Init
+        loadGame1();
+
+    </script>
+</body>
+</html>
